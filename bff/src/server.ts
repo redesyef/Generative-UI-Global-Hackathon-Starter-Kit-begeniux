@@ -18,6 +18,18 @@ const agent = new LangGraphAgent({
     process.env.LANGGRAPH_DEPLOYMENT_URL ?? "http://localhost:8123",
   graphId: "default",
   langsmithApiKey: process.env.LANGSMITH_API_KEY ?? "",
+  // Default LangGraph recursion_limit is 25; the deepagents planner runs
+  // its TODO/scratchpad loop on top of every tool call, so an occasional
+  // 1-2-step planner detour (e.g. "find Ethan Moore" exploring virtual-fs
+  // tools before settling on selectLead) can otherwise eat the budget
+  // before the real frontend tool fires. 60 leaves headroom for multi-
+  // step turns like "draft email + queue" without masking real loops.
+  // The system prompt now explicitly forbids virtual-fs tools for lead
+  // lookups (see agent/src/prompts.py FILESYSTEM TOOLS section) so this
+  // is a safety belt, not the primary fix.
+  assistantConfig: {
+    recursion_limit: Number(process.env.LANGGRAPH_RECURSION_LIMIT ?? 60),
+  },
 });
 
 const app = createCopilotEndpoint({
