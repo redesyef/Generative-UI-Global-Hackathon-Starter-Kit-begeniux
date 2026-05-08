@@ -178,10 +178,14 @@ Smoke-test prompts:
 ### Deploy to Manufact Cloud
 
 ```bash
+# Login to Manufact Cloud
+npx @mcp-use/cli login
+
+# Deploy
 npm run -w mcp deploy
 ```
 
-Live at `https://<your-slug>.run.manufact.com/mcp` and managed from [manufact.com/cloud](https://manufact.com/cloud).
+Live at `https://<your-slug>.run.mcp-use.com/mcp` and managed from [manufact.com/cloud/servers/<your-slug>](https://manufact.com/cloud).
 
 Once deployed, point the runtime at it by setting `MCP_SERVER_URL` in `.env`.
 
