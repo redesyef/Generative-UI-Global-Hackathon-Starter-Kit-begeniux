@@ -89,17 +89,43 @@ app.use("*", async (c, next) => {
     body.includes("threads_user_id_fkey") ||
     (body.includes("Failed to initialize thread") &&
       body.includes("user_id"));
-  if (!isThreadFkey) return;
+  if (isThreadFkey) {
+    const remapped = {
+      error: "Postgres user seed missing",
+      hint: "Run `npm run seed` to seed the default user, then retry.",
+      command: "npm run seed",
+    };
+    c.res = new Response(JSON.stringify(remapped), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+    return;
+  }
 
-  const remapped = {
-    error: "Postgres user seed missing",
-    hint: "Run `npm run seed` to seed the default user, then retry.",
-    command: "npm run seed",
-  };
-  c.res = new Response(JSON.stringify(remapped), {
-    status: 500,
-    headers: { "content-type": "application/json" },
-  });
+  // Thread-lock recovery: a previous run on this thread errored mid-stream
+  // (e.g. a recursion-limit blow-up before we bumped the ceiling) and the
+  // LangGraph SDK's per-thread lock didn't release. Subsequent runs reject
+  // with `AgentThreadLockedError: Thread <id> is locked`. Surface that as
+  // a recoverable hint so the user knows to start a new conversation —
+  // versus the raw rxjs stack trace they get otherwise.
+  const isThreadLocked =
+    body.includes("AgentThreadLockedError") ||
+    /Thread\s+[0-9a-f-]{36}\s+is locked/i.test(body);
+  if (isThreadLocked) {
+    const remapped = {
+      error: "Thread is locked",
+      hint:
+        "A previous turn errored mid-stream and didn't release the run " +
+        "lock. Start a new conversation (sidebar → +) to continue. The " +
+        "underlying cause has been fixed, but this thread is stuck.",
+      command: "new-thread",
+    };
+    c.res = new Response(JSON.stringify(remapped), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+    return;
+  }
 });
 
 const port = Number(process.env.PORT) || 4000;
