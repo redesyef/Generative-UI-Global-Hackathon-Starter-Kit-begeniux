@@ -1,4 +1,4 @@
-import type { AgentState, EnrichmentState, LeadFilter } from "./types";
+import type { AgentState, LeadFilter } from "./types";
 
 export const emptyFilter: LeadFilter = {
   workshops: [],
@@ -8,26 +8,16 @@ export const emptyFilter: LeadFilter = {
   search: "",
 };
 
-export const emptyEnrichment: EnrichmentState = {
-  isActive: false,
-  startedAt: null,
-  completedAt: null,
-  perLead: {},
-};
-
 export const initialState: AgentState = {
   leads: [],
   filter: emptyFilter,
-  view: "pipeline",
-  segments: [],
   highlightedLeadIds: [],
   selectedLeadId: null,
   header: {
     title: "Workshop Lead Triage",
-    subtitle: "Ask the assistant: “Pull the workshop signups from Notion.”",
+    subtitle: "Live from Notion",
   },
   sync: { databaseId: "", databaseTitle: "", syncedAt: null },
-  enrichment: emptyEnrichment,
 };
 
 export function isFilterEmpty(f: LeadFilter): boolean {

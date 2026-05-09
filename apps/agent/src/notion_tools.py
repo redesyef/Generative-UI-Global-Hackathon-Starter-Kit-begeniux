@@ -72,12 +72,11 @@ def fetch_notion_leads(
     agent doesn't need to know which one is active — it just calls this
     tool and gets a populated canvas back.
 
-    Returns a `Command` that updates `leads`, `view`, `header.subtitle`,
-    and `sync` directly on the agent state. The frontend's STATE_SNAPSHOT
+    Returns a `Command` that updates `leads`, `header.subtitle`, and
+    `sync` directly on the agent state. The frontend's STATE_SNAPSHOT
     picks that up so the canvas is populated as a side-effect of this
     single tool call. The agent does NOT need to call setLeads /
-    setView / setHeader / setSyncMeta after this — just reply with a
-    brief summary.
+    setHeader / setSyncMeta after this — just reply with a brief summary.
 
     Why this returns a Command instead of JSON: Gemini 3 Pro stalls for
     minutes when asked to construct `setLeads(leads=[50 fat objects])`
@@ -124,7 +123,6 @@ def fetch_notion_leads(
 
         update: dict[str, Any] = {
             "leads": rows,
-            "view": "pipeline",
             "header": {
                 "title": "Workshop Lead Triage",
                 "subtitle": f"{len(rows)} leads from {source_label} · top demand: {top_workshop}",
@@ -166,11 +164,12 @@ def find_lead(
 ) -> str:
     """Look up the real lead id for a name from state.leads.
 
-    Use this BEFORE calling selectLead / update_notion_lead / renderEmailDraft
-    when you only have a name. NEVER fabricate ids like
-    "<name>-id-placeholder" — they don't exist in state.leads, so selectLead
-    will silently set selectedLeadId to a non-existent id and the modal will
-    not open. Always resolve the real id through this tool.
+    Use this BEFORE calling selectLead / update_notion_lead /
+    commitLeadEdit / renderLeadMiniCard when you only have a name. NEVER
+    fabricate ids like "<name>-id-placeholder" — they don't exist in
+    state.leads, so selectLead will silently set selectedLeadId to a
+    non-existent id and the modal will not open. Always resolve the real
+    id through this tool.
 
     Returns a JSON string:
       - on a single match: {"match": {id, name, role, company, email}}

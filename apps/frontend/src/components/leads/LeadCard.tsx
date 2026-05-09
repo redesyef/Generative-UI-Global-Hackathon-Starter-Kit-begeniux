@@ -2,12 +2,11 @@
 
 import { motion } from "motion/react";
 import { Mail, ExternalLink, Check } from "lucide-react";
-import type { Lead, Segment } from "@/lib/leads/types";
+import type { Lead } from "@/lib/leads/types";
 import {
   initials,
   techLevelClass,
   workshopClass,
-  segmentDotClass,
 } from "@/lib/leads/derive";
 import { usePulse } from "@/lib/leads/hooks";
 
@@ -21,7 +20,6 @@ interface LeadCardProps {
    * fires on the transition, the ring style stays for the duration.
    */
   highlightedLeadIds?: string[];
-  segments?: Segment[];
   onClick?: () => void;
   compact?: boolean;
   /** Spinner overlay (data-syncing) while a Notion write is in flight. */
@@ -35,7 +33,6 @@ export function LeadCard({
   selected,
   highlighted,
   highlightedLeadIds,
-  segments,
   onClick,
   compact,
   syncing,
@@ -43,10 +40,13 @@ export function LeadCard({
 }: LeadCardProps) {
   const pulsing = usePulse(lead.id, highlightedLeadIds ?? []);
   const ring = selected
-    ? "ring-2 ring-primary"
+    ? "ring-2 ring-[#BEC2FF]"
     : highlighted
       ? "ring-2 ring-amber-400"
       : "ring-1 ring-border";
+  const surface = highlighted
+    ? "bg-[#BEC2FF1A]"
+    : "bg-card hover:bg-[#BEC2FF1A]";
   return (
     <motion.button
       type="button"
@@ -60,19 +60,8 @@ export function LeadCard({
       data-pulse={pulsing ? "true" : "false"}
       data-syncing={syncing ? "true" : undefined}
       data-just-synced={justSynced ? "true" : undefined}
-      className={`group relative flex w-full flex-col items-stretch gap-2.5 rounded-lg bg-card p-3 text-left transition hover:bg-accent/40 ${ring}`}
+      className={`group relative flex w-full flex-col items-stretch gap-2.5 rounded-xl border border-border p-3 text-left shadow-sm transition ${surface} ${ring}`}
     >
-      {segments && segments.length > 0 ? (
-        <div className="absolute right-2 top-2 flex gap-1">
-          {segments.slice(0, 4).map((s) => (
-            <span
-              key={s.id}
-              title={s.name}
-              className={`size-2 rounded-full ${segmentDotClass(s.color)}`}
-            />
-          ))}
-        </div>
-      ) : null}
       <div className="flex items-start gap-2.5">
         <Avatar name={lead.name} />
         <div className="min-w-0 flex-1">
@@ -110,8 +99,10 @@ export function LeadCard({
               {lead.tools.slice(0, 5).map((t) => (
                 <span
                   key={t}
-                  className={`rounded-md bg-muted/70 px-1.5 py-0.5 text-[10px] text-muted-foreground ${
-                    t === "CopilotKit" ? "ring-1 ring-primary/40 text-foreground" : ""
+                  className={`rounded-md bg-muted/70 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground ${
+                    t === "CopilotKit"
+                      ? "ring-1 ring-[#BEC2FF]/60 text-foreground"
+                      : ""
                   }`}
                 >
                   {t}

@@ -1,5 +1,5 @@
-import type { Lead, LeadFilter, Workshop } from "./types";
-import { STATUSES, WORKSHOPS } from "./types";
+import type { Lead, LeadFilter } from "./types";
+import { STATUSES } from "./types";
 
 export function applyFilter(leads: Lead[], f: LeadFilter): Lead[] {
   const search = f.search.trim().toLowerCase();
@@ -33,59 +33,6 @@ export function groupByStatus(leads: Lead[]): Record<string, Lead[]> {
     (groups[key] ||= []).push(l);
   }
   return groups;
-}
-
-export interface DemandRow {
-  label: string;
-  count: number;
-}
-
-export function workshopDemand(leads: Lead[]): DemandRow[] {
-  const counts: Record<string, number> = {};
-  for (const w of WORKSHOPS) counts[w] = 0;
-  for (const l of leads) {
-    const key = (WORKSHOPS as readonly string[]).includes(l.workshop)
-      ? l.workshop
-      : "Not sure yet";
-    counts[key] = (counts[key] ?? 0) + 1;
-  }
-  return WORKSHOPS.map((w) => ({ label: w, count: counts[w] ?? 0 })).sort(
-    (a, b) => b.count - a.count,
-  );
-}
-
-export function toolUsage(leads: Lead[]): DemandRow[] {
-  const counts: Record<string, number> = {};
-  for (const l of leads) {
-    for (const t of l.tools) {
-      counts[t] = (counts[t] ?? 0) + 1;
-    }
-  }
-  return Object.entries(counts)
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
-export function techLevelBreakdown(leads: Lead[]): DemandRow[] {
-  const counts: Record<string, number> = {};
-  for (const l of leads) {
-    counts[l.technical_level] = (counts[l.technical_level] ?? 0) + 1;
-  }
-  return Object.entries(counts)
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
-export function optInRate(leads: Lead[]): { yes: number; no: number; pct: number } {
-  const yes = leads.filter((l) => l.opt_in).length;
-  const no = leads.length - yes;
-  return { yes, no, pct: leads.length ? Math.round((yes / leads.length) * 100) : 0 };
-}
-
-export function topWorkshop(leads: Lead[]): Workshop | null {
-  const ranked = workshopDemand(leads);
-  if (!ranked.length || ranked[0].count === 0) return null;
-  return ranked[0].label as Workshop;
 }
 
 export function initials(name: string): string {
@@ -144,18 +91,4 @@ export function statusClass(status: string): string {
   return (
     STATUS_COLORS[status] ?? "bg-muted text-muted-foreground ring-border"
   );
-}
-
-const SEGMENT_COLORS: Record<string, string> = {
-  indigo: "bg-indigo-500",
-  emerald: "bg-emerald-500",
-  amber: "bg-amber-500",
-  rose: "bg-rose-500",
-  sky: "bg-sky-500",
-  violet: "bg-violet-500",
-  slate: "bg-slate-500",
-};
-
-export function segmentDotClass(color?: string): string {
-  return SEGMENT_COLORS[color ?? "slate"] ?? "bg-slate-500";
 }

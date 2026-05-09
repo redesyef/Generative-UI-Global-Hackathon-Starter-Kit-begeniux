@@ -2,125 +2,162 @@
 
 In CopilotKit v2, the **React side is the single source of truth** for
 frontend tools: each `useFrontendTool({ name, parameters, handler })` call
-in `src/app/page.tsx` declares the tool's schema to the runtime AND
-provides the handler. The runtime forwards those declarations into the
-agent's tool list at run time, so the LLM sees them automatically.
+in `apps/frontend/src/app/leads/page.tsx` declares the tool's schema to
+the runtime AND provides the handler. The runtime forwards those
+declarations into the agent's tool list at run time, so the LLM sees them
+automatically.
 
 The Python functions below are NOT registered with the agent — passing them
 to `create_deep_agent(tools=[...])` would cause Gemini to reject the request
 with "Duplicate function declaration found: <name>". They live here as a
 quick contract reference for anyone reading the agent code. The actual
-schema is in `src/app/page.tsx`.
+schema is in `apps/frontend/src/app/leads/page.tsx`.
 
-The `AgentState` TypedDict mirrors the React `AgentState` shape; canvas
-state flows through CopilotKit's shared-state mechanism (`useAgent` +
-`agent.setState(...)`), not via deepagents API. `create_deep_agent` does
-not accept (and does not need) a `state_schema=` kwarg.
+The state shape mirrors the React `AgentState` shape; canvas state flows
+through CopilotKit's shared-state mechanism (`useAgent` +
+`agent.setState(...)`), not via the deepagents API. `create_deep_agent`
+does not accept (and does not need) a `state_schema=` kwarg.
+
+Frontend tool surface (all declared on the React side):
+
+  state mutators:
+    setHeader, setLeads, setSyncMeta, setFilter, clearFilters,
+    highlightLeads, selectLead, commitLeadEdit
+  controlled gen UI:
+    renderLeadMiniCard, renderWorkshopDemand
+  open gen UI:
+    everything else falls through `useDefaultRenderTool` to a generic
+    CopilotKit-branded card.
 """
 
-from typing import Annotated, List, Literal, Optional, TypedDict
+from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict
 from typing_extensions import NotRequired
 
 
-# --- Shared canvas state (mirrors React state on the frontend) -------------
+# --- Lead shape (mirrors apps/frontend/src/lib/leads/types.ts) -------------
 
 
-class ChecklistItem(TypedDict):
+class Lead(TypedDict, total=False):
     id: str
-    text: str
-    done: bool
-    proposed: bool
-
-
-class Item(TypedDict):
-    id: str
-    type: Literal["project", "entity", "note", "chart"]
+    url: str
     name: str
-    subtitle: str
-    # Union of ProjectData | EntityData | NoteData | ChartData; the canvas
-    # frontend defines the per-type shape and the agent treats this as opaque.
-    data: dict
+    company: str
+    email: str
+    role: str
+    phone: str
+    source: str
+    technical_level: str
+    interested_in: List[str]
+    tools: List[str]
+    workshop: str
+    status: str
+    opt_in: bool
+    message: str
+    submitted_at: str
 
 
-class AgentState(TypedDict):
-    items: List[Item]
-    globalTitle: str
-    globalDescription: str
-    lastAction: NotRequired[str]
-    itemsCreated: int
-    syncSheetId: NotRequired[str]
-    syncSheetName: NotRequired[str]
+class LeadFilter(TypedDict):
+    workshops: List[str]
+    technical_levels: List[str]
+    tools: List[str]
+    opt_in: Literal["any", "yes", "no"]
+    search: str
+
+
+class SyncMeta(TypedDict):
+    databaseId: str
+    databaseTitle: str
+    syncedAt: Optional[str]
+
+
+class CanvasState(TypedDict):
+    leads: List[Lead]
+    filter: LeadFilter
+    highlightedLeadIds: List[str]
+    selectedLeadId: Optional[str]
+    header: NotRequired[Dict[str, str]]
+    sync: NotRequired[SyncMeta]
 
 
 # --- Frontend tool contract (documentation only — NOT registered) ---------
 #
 # The functions below mirror the `useFrontendTool` registrations in
-# `src/app/page.tsx`. They exist so reviewers can see the contract at a
-# glance from the agent side. They are deliberately NOT included in
-# `frontend_tool_stubs` and NOT passed to `create_deep_agent(tools=)`.
-# The React side declares them to the runtime, which forwards them to the
-# agent at run time.
+# `apps/frontend/src/app/leads/page.tsx`. They exist so reviewers can see
+# the contract at a glance from the agent side. They are deliberately NOT
+# included in `frontend_tool_stubs` and NOT passed to
+# `create_deep_agent(tools=)`. The React side declares them to the runtime,
+# which forwards them to the agent at run time.
 
 
-def createItem(
-    type: Annotated[str, "One of: project, entity, note, chart."],
-    name: Annotated[Optional[str], "Optional item name."] = None,
+def setHeader(
+    title: Annotated[Optional[str], "New workspace heading title."] = None,
+    subtitle: Annotated[Optional[str], "New workspace heading subtitle."] = None,
 ) -> str:
-    """Create a new canvas item and return its id."""
-    return f"createItem({type}, {name})"
+    """Set the workspace heading."""
+    return f"setHeader({title}, {subtitle})"
 
 
-def deleteItem(
-    itemId: Annotated[str, "Target item id."],
+def setLeads(
+    leads: Annotated[List[Lead], "Full lead list — replaces canvas state."],
 ) -> str:
-    """Delete an item by id."""
-    return f"deleteItem({itemId})"
+    """REPLACE the entire canvas lead list."""
+    return f"setLeads({len(leads)} leads)"
 
 
-def setItemName(
-    itemId: Annotated[str, "Target item id."],
-    name: Annotated[str, "New item name/title."],
+def setSyncMeta(
+    databaseId: Annotated[Optional[str], "Notion DB id (or 'local')."] = None,
+    databaseTitle: Annotated[Optional[str], "Notion DB title."] = None,
+    syncedAt: Annotated[Optional[str], "ISO timestamp of last sync."] = None,
 ) -> str:
-    """Set an item's name."""
-    return f"setItemName({itemId}, {name})"
+    """Record which lead store the canvas mirrors."""
+    return f"setSyncMeta({databaseId}, {databaseTitle}, {syncedAt})"
 
 
-def setGlobalTitle(title: Annotated[str, "New global title."]) -> str:
-    """Set the global canvas title."""
-    return f"setGlobalTitle({title})"
-
-
-def setGlobalDescription(description: Annotated[str, "New global description."]) -> str:
-    """Set the global canvas description."""
-    return f"setGlobalDescription({description})"
-
-
-# Project actions
-def setProjectField1(
-    itemId: Annotated[str, "Project id."],
-    value: Annotated[str, "New value for project.data.field1 (free text)."],
+def setFilter(
+    patch: Annotated[Dict[str, Any], "Partial LeadFilter patch."],
 ) -> str:
-    """Set project.data.field1 (text — use this for the project's main details)."""
-    return f"setProjectField1({itemId}, {value})"
+    """Partial-merge into the canvas filter."""
+    return f"setFilter({patch})"
 
 
-def setProjectField2(
-    itemId: Annotated[str, "Project id."],
-    value: Annotated[
-        str,
-        "Priority select. Allowed: 'Option A' (high), 'Option B' (medium), 'Option C' (low).",
-    ],
+def clearFilters() -> str:
+    """Reset all filters to their empty defaults."""
+    return "clearFilters()"
+
+
+def highlightLeads(
+    leadIds: Annotated[List[str], "Lead ids to visually highlight."],
 ) -> str:
-    """Set project.data.field2 (priority select)."""
-    return f"setProjectField2({itemId}, {value})"
+    """Highlight a set of cards (visual emphasis only — not a filter)."""
+    return f"highlightLeads({leadIds})"
 
 
-def addProjectChecklistItem(
-    itemId: Annotated[str, "Project id."],
-    text: Annotated[Optional[str], "Checklist text."] = None,
+def selectLead(
+    leadId: Annotated[Optional[str], "Lead id to open, or None to close."],
 ) -> str:
-    """Append a checklist item to project.data.field4."""
-    return f"addProjectChecklistItem({itemId}, {text})"
+    """Open / close the lead detail panel."""
+    return f"selectLead({leadId})"
+
+
+def commitLeadEdit(
+    leadId: Annotated[str, "Lead id."],
+    patch: Annotated[Dict[str, Any], "Partial Lead patch."],
+) -> str:
+    """Persist a single-lead patch to Notion AND to canvas state."""
+    return f"commitLeadEdit({leadId}, {patch})"
+
+
+def renderLeadMiniCard(
+    leadId: Annotated[str, "Real lead id — see find_lead."],
+    name: Annotated[Optional[str], "Optional display name."] = None,
+) -> str:
+    """Render an inline lead card in the chat stream."""
+    return f"renderLeadMiniCard({leadId}, {name})"
+
+
+def renderWorkshopDemand() -> str:
+    """Render an inline mini-chart of workshop demand."""
+    return "renderWorkshopDemand()"
 
 
 # --- Export list ----------------------------------------------------------

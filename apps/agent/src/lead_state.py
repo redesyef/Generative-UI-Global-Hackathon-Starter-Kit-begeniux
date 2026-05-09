@@ -169,7 +169,6 @@ class LeadStateMiddleware(AgentMiddleware[LeadCanvasState, Any]):  # type: ignor
 
         return {
             "leads": rows,
-            "view": "pipeline",
             "header": {
                 "title": "Workshop Lead Triage",
                 "subtitle": (

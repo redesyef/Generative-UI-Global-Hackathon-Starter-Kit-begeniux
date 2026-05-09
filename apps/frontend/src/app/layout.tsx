@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-import { Manrope } from "next/font/google";
-import { GeistMono } from "geist/font/mono";
+import { Plus_Jakarta_Sans, Spline_Sans_Mono } from "next/font/google";
 import { CopilotKitProviderShell } from "@/components/copilot/CopilotKitProviderShell";
 import "./globals.css";
 // v2 owns its own stylesheet. Do NOT import @copilotkit/react-ui/styles.css —
@@ -10,10 +9,16 @@ import "./globals.css";
 // and break the sidebar layout when both are loaded.
 import "@copilotkit/react-core/v2/styles.css";
 
-const manrope = Manrope({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-manrope",
+  variable: "--font-jakarta",
+});
+
+const splineMono = Spline_Sans_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -28,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${manrope.variable} ${GeistMono.variable}`}>
-      <body className="subpixel-antialiased">
+    <html lang="en" className={`${jakarta.variable} ${splineMono.variable}`}>
+      <body className={`${jakarta.variable} ${splineMono.variable} subpixel-antialiased`}>
         <CopilotKitProviderShell>{children}</CopilotKitProviderShell>
       </body>
     </html>

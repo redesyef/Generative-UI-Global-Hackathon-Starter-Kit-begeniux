@@ -365,17 +365,16 @@ export default function AboutPage() {
             <div className="flex items-center gap-2">
               <Code2 size={16} className="text-accent" aria-hidden />
               <h3 className="text-sm font-semibold text-foreground">
-                Add a card type
+                Add a frontend tool
               </h3>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Extend <Code>CardType</Code> in{" "}
-              <Code>apps/frontend/src/lib/canvas/types.ts</Code>, render its
-              branch in{" "}
-              <Code>apps/frontend/src/components/canvas/CardRenderer.tsx</Code>,
-              then add one mutation tool via <Code>useFrontendTool</Code> in{" "}
-              <Code>apps/frontend/src/app/leads/page.tsx</Code>. Tell the
-              agent about it in <Code>apps/agent/src/prompts.py</Code>.
+              Register a new <Code>useFrontendTool</Code> in{" "}
+              <Code>apps/frontend/src/app/leads/page.tsx</Code> with the
+              parameters it accepts and a handler that mutates state. Tell
+              the agent about it in <Code>apps/agent/src/prompts.py</Code>.
+              Anything you don&apos;t give a dedicated render slot will
+              fall through to the generic CopilotKit-branded card.
             </p>
           </div>
           <div className="rounded-xl border bg-card p-5">

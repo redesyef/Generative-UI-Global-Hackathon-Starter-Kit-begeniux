@@ -13,15 +13,15 @@ const tiles = [
     eyebrow: "Demo",
     title: "Leads canvas",
     blurb:
-      "The full working app: pipeline, demand, list views, HITL flows, optimistic Notion writes through the agent.",
+      "Workshop demand chart and a kanban pipeline backed by Notion. Drag cards across statuses; the agent persists writes back through the MCP tools.",
     icon: LayoutGrid,
   },
   {
     href: "/showcase",
     eyebrow: "Reference",
-    title: "Component showcase",
+    title: "Frontend tool surface",
     blurb:
-      "Every frontend tool, hook, and generative-UI surface the kit ships with — explorable in isolation.",
+      "Every state mutator, controlled-gen-UI renderer, and the open-gen-UI fallback the agent can call — rendered with mock data.",
     icon: Sparkles,
   },
   {

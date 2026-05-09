@@ -4,7 +4,6 @@ import {
   Archive,
   ArchiveRestore,
   BookOpen,
-  Boxes,
   ChevronLeft,
   ChevronRight,
   Code2,
@@ -57,9 +56,9 @@ const DOC_LINKS: Array<{
     external: false,
   },
   {
-    label: "CopilotKit Components",
+    label: "Tool surface",
     href: "/showcase",
-    icon: Boxes,
+    icon: Sparkles,
     external: false,
   },
   {

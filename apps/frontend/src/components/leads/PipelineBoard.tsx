@@ -13,14 +13,13 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import type { Lead, Segment } from "@/lib/leads/types";
+import type { Lead } from "@/lib/leads/types";
 import { STATUSES } from "@/lib/leads/types";
 import { groupByStatus, statusClass } from "@/lib/leads/derive";
 import { LeadCard } from "./LeadCard";
 
 interface PipelineBoardProps {
   leads: Lead[];
-  segments: Segment[];
   selectedLeadId: string | null;
   highlightedLeadIds: string[];
   onSelect: (id: string) => void;
@@ -37,7 +36,6 @@ interface PipelineBoardProps {
 
 export function PipelineBoard({
   leads,
-  segments,
   selectedLeadId,
   highlightedLeadIds,
   onSelect,
@@ -47,8 +45,6 @@ export function PipelineBoard({
 }: PipelineBoardProps) {
   const groups = groupByStatus(leads);
   const highlighted = new Set(highlightedLeadIds);
-  const segmentByLead = (id: string) =>
-    segments.filter((s) => s.leadIds.includes(id));
 
   const [draggingLead, setDraggingLead] = useState<Lead | null>(null);
 
@@ -84,13 +80,13 @@ export function PipelineBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setDraggingLead(null)}
     >
-      <div className="flex h-full gap-3 overflow-x-auto pb-2">
+      <div className="flex h-full gap-4 overflow-x-auto pb-2">
         {STATUSES.map((s) => {
           const list = groups[s] ?? [];
           return (
             <DroppableColumn key={s} status={s} count={list.length}>
               {list.length === 0 ? (
-                <div className="grid place-items-center py-8 text-[11px] text-muted-foreground/60">
+                <div className="grid place-items-center py-8 font-mono text-[11px] uppercase tracking-wide text-muted-foreground/60">
                   empty
                 </div>
               ) : (
@@ -102,7 +98,6 @@ export function PipelineBoard({
                       selected={selectedLeadId === lead.id}
                       highlighted={highlighted.has(lead.id)}
                       highlightedLeadIds={highlightedLeadIds}
-                      segments={segmentByLead(lead.id)}
                       onClick={() => onSelect(lead.id)}
                       syncing={syncingIds?.has(lead.id) ?? false}
                       justSynced={justSyncedIds?.has(lead.id) ?? false}
@@ -118,10 +113,7 @@ export function PipelineBoard({
       <DragOverlay>
         {draggingLead ? (
           <div className="opacity-90">
-            <LeadCard
-              lead={draggingLead}
-              segments={segmentByLead(draggingLead.id)}
-            />
+            <LeadCard lead={draggingLead} />
           </div>
         ) : null}
       </DragOverlay>
@@ -142,27 +134,27 @@ function DroppableColumn({
   return (
     <section
       ref={setNodeRef}
-      className={`flex flex-1 min-w-72 shrink-0 flex-col rounded-xl border bg-muted/20 transition ${
+      className={`flex flex-1 min-w-72 shrink-0 flex-col rounded-xl border bg-card transition ${
         isOver
-          ? "border-primary/50 ring-1 ring-primary/30 bg-primary/5"
+          ? "border-[#BEC2FF] ring-1 ring-[#BEC2FF] bg-[#BEC2FF1A]"
           : "border-border"
       }`}
     >
-      <header className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2.5">
-        <div className="flex items-center gap-2 min-w-0">
+      <header className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
           <span
-            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${statusClass(
+            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ring-1 ring-inset ${statusClass(
               status,
             )}`}
           >
             {status}
           </span>
         </div>
-        <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-inset ring-border tabular-nums">
+        <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground ring-1 ring-inset ring-border">
           {count}
         </span>
       </header>
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
         {children}
       </div>
     </section>
@@ -174,7 +166,6 @@ interface DraggableLeadCardProps {
   selected: boolean;
   highlighted: boolean;
   highlightedLeadIds: string[];
-  segments: Segment[];
   onClick: () => void;
   syncing?: boolean;
   justSynced?: boolean;
@@ -185,7 +176,6 @@ function DraggableLeadCard({
   selected,
   highlighted,
   highlightedLeadIds,
-  segments,
   onClick,
   syncing,
   justSynced,
@@ -206,7 +196,6 @@ function DraggableLeadCard({
         selected={selected}
         highlighted={highlighted}
         highlightedLeadIds={highlightedLeadIds}
-        segments={segments}
         onClick={onClick}
         syncing={syncing}
         justSynced={justSynced}
