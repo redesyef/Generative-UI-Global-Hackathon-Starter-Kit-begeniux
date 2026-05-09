@@ -46,9 +46,13 @@
     "behavioral-ui"
   ],
   "license": "MIT",
+  "homepage": "https://github.com/WagnerAgent/BeGeniux#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/redesyef/begeniux.git"
+    "url": "git+https://github.com/WagnerAgent/BeGeniux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WagnerAgent/BeGeniux/issues"
   },
   "publishConfig": {
     "access": "public"
