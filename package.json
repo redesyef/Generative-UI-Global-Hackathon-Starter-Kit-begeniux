@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev:infra": "docker compose --project-directory . -f deployment/docker-compose.yml up -d --wait && npm run seed",
