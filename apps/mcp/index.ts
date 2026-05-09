@@ -144,24 +144,44 @@ server.tool(
   },
 );
 
+// Sample draft used when the inspector calls show-email-draft with no
+// arguments. Mirrors the SAMPLE_LEADS fallback the other widgets use so the
+// widget renders cleanly out of the box.
+const SAMPLE_DRAFT = {
+  leadId: "sample-ada-lovelace",
+  leadName: "Ada Lovelace",
+  leadEmail: "ada.lovelace@example.com",
+  leadCompany: "Mango Labs",
+  leadRole: "Founder",
+  subject: "Following up on your Agentic UI workshop interest",
+  body:
+    "Hi Ada,\n\n" +
+    "Thanks for signing up for the Agentic UI (AG-UI) workshop — your background at Mango Labs is exactly the profile we're building the curriculum for.\n\n" +
+    "A quick question before we lock the date: are there one or two specific patterns (state sync, tool gating, HITL) you're hoping we cover?\n\n" +
+    "Best,\nWorkshop team",
+};
+
 server.tool(
   {
     name: "show-email-draft",
     description:
-      "Render a human-in-the-loop email draft for a single lead. Subject and body are editable in place; clicking Send calls post-email-comment to persist the message as a Notion comment.",
+      "Render a human-in-the-loop email draft for a single lead. Subject and body are editable in place; clicking Send calls post-email-comment to persist the message as a Notion comment. Defaults to a sample draft when called with no arguments.",
     schema: z.object({
       leadId: z
         .string()
+        .default(SAMPLE_DRAFT.leadId)
         .describe("Notion page id of the lead to email."),
-      leadName: z.string().optional(),
-      leadEmail: z.string().optional(),
-      leadCompany: z.string().optional(),
-      leadRole: z.string().optional(),
+      leadName: z.string().default(SAMPLE_DRAFT.leadName).optional(),
+      leadEmail: z.string().default(SAMPLE_DRAFT.leadEmail).optional(),
+      leadCompany: z.string().default(SAMPLE_DRAFT.leadCompany).optional(),
+      leadRole: z.string().default(SAMPLE_DRAFT.leadRole).optional(),
       subject: z
         .string()
+        .default(SAMPLE_DRAFT.subject)
         .describe("Initial subject line — user may edit before sending."),
       body: z
         .string()
+        .default(SAMPLE_DRAFT.body)
         .describe("Initial email body — user may edit before sending."),
     }),
     widget: {
@@ -171,10 +191,14 @@ server.tool(
     },
   },
   async (input) => {
+    const props = {
+      ...SAMPLE_DRAFT,
+      ...input,
+    };
     return widget({
-      props: input,
+      props,
       output: text(
-        `Drafted an email to ${input.leadName ?? input.leadEmail ?? input.leadId}: ${input.subject}`,
+        `Drafted an email to ${props.leadName ?? props.leadEmail ?? props.leadId}: ${props.subject}`,
       ),
     });
   },
@@ -184,14 +208,19 @@ server.tool(
   {
     name: "post-email-comment",
     description:
-      "Post an APPROVED email draft as a comment on the lead's Notion page. Called by the email-draft widget when the user clicks Send. Returns a confirmation message.",
+      "Post an APPROVED email draft as a comment on the lead's Notion page. Called by the email-draft widget when the user clicks Send. Returns a confirmation message. Defaults to the sample draft when called with no arguments.",
     schema: z.object({
-      leadId: z.string().describe("Notion page id of the lead."),
+      leadId: z
+        .string()
+        .default(SAMPLE_DRAFT.leadId)
+        .describe("Notion page id of the lead."),
       subject: z
         .string()
+        .default(SAMPLE_DRAFT.subject)
         .describe("Final subject line, after the user's edits."),
       body: z
         .string()
+        .default(SAMPLE_DRAFT.body)
         .describe("Final email body, after the user's edits."),
     }),
   },
