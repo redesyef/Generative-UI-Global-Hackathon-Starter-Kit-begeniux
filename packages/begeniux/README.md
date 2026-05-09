@@ -6,7 +6,155 @@ Most generative UI today reacts to *prompts*. **BeGeniux reacts to behavioral tr
 
 You wrap a region of UI in `<BeGenSurface>`, pass in a set of variant components and a `classify` function. The library handles behavior tracking, summarization, and variant swapping. Bring your own LLM — Gemini, Claude, OpenAI, a heuristic, anything that satisfies `ClassifyFn`.
 
-> Our contribution is the combination of three ideas that have not been combined before: **interaction traces as the input modality** (not text prompts), **LLM agents as the policy** (not hand-coded rules or shallow classifiers), and **session-granularity adaptation** (not population-level A/B tests) — under developer-declared invariants that keep the policy honest.
+---
+
+## Why this exists
+
+Adaptive UI research is 30+ years old. SUPPLE (2004) showed UIs could regenerate per-user. Contextual bandits (2010) showed online learning could pick layouts. Implicit-feedback work (2005) showed clicks already encode preference. None of this shipped at scale. Why?
+
+- **Hand-coded rules** couldn't keep up with the combinatorics of real UIs.
+- **Shallow ML** needed huge population-level traffic to converge — too slow for a single session.
+- **A/B tests** optimize *populations*, not *individuals* — the wrong granularity.
+
+In-context learning (GPT-3 onward) finally cracked it. An LLM can reason from a handful of behavioral signals to a sensible UI choice, **without training, without traffic, in one session**. That's the unlock.
+
+```mermaid
+flowchart LR
+  subgraph Trad["Today's generative UI"]
+    direction LR
+    P["💬 User<br/>prompt"] --> M1["LLM"] --> U1["Generated UI"]
+  end
+  subgraph Be["BeGeniux"]
+    direction LR
+    B["🖱️ Behavioral trace<br/>clicks · scrolls · hovers · dwells"] --> M2["LLM<br/>as policy"] --> U2["Adapted UI<br/>session-granular"]
+  end
+  Trad ~~~ Be
+```
+
+> Our contribution is the combination of three ideas that have not been combined before: **interaction traces as the input modality** (not text prompts), **LLM agents as the policy** (not hand-coded rules or shallow classifiers), and **session-granularity adaptation** (not population-level A/B tests) — under developer-declared invariants that keep the policy honest. The first two are 2024+ technology that finally make 30 years of adaptive UI research tractable.
+
+### The goal
+
+Make any web region **behaviorally adaptive** with one component swap. The developer keeps full control of the variants — the library only decides *which* one is rendered, *when*, and *why* (with the LLM's reasoning string attached).
+
+---
+
+## How it works
+
+Every `<BeGenSurface>` runs a tight loop, scoped to its own DOM region:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant T as useBehaviorTracker
+  participant S as BeGenSurface
+  participant C as classify (your code)
+  participant V as Active variant
+
+  U->>T: clicks · scrolls · hovers · dwells
+  Note over T: Ring buffer of last 50 events<br/>(scoped to this surface only)
+  T->>T: Every 10 events OR 5s →<br/>compute BehaviorSummary
+  T->>S: BehaviorSummary
+  S->>S: rate-limit gate (≥4s since last call)
+  S->>C: classify(summary)
+  Note over C: Your LLM / AG-UI route /<br/>heuristic — anything matching ClassifyFn
+  C-->>S: AgentDirective<br/>{variant, confidence, reasoning}
+  S->>V: mount variants[directive.variant]<br/>with variantProps
+  V->>U: new UI · ≤ 2s round-trip
+```
+
+Three things keep this honest:
+
+1. **Listeners scoped to the container element**, not `window` — two surfaces side-by-side never cross-pollute events.
+2. **Rate limit on `classify`** (default 4s) — caps cost and prevents thrash.
+3. **Errors keep the current variant.** A classifier failure never crashes the UI; the user just stays on what they had.
+
+---
+
+## Where it fits in your stack
+
+The library is one layer. You bring your variants and your policy:
+
+```mermaid
+flowchart TB
+  subgraph YourApp["Your application"]
+    direction TB
+    Page["Page / Route"]
+    Variants["Your variant components<br/>DenseGrid · DeliberateGrid · NeutralGrid"]
+    Classify["Your classify function"]
+    Page --> Surface
+    Surface -->|renders one of| Variants
+    Surface -->|invokes| Classify
+  end
+
+  subgraph Lib["begeniux (this package)"]
+    direction TB
+    Surface["&lt;BeGenSurface&gt;"]
+    Provider["&lt;BeGenProvider&gt;"]
+    Tracker["useBehaviorTracker"]
+    Ctx["BeGenContext"]
+    Surface -.uses.-> Tracker
+    Surface -.publishes to.-> Ctx
+    Provider -.exposes.-> Ctx
+  end
+
+  subgraph Policy["Behind your classify fn (you choose)"]
+    direction TB
+    Gemini["Gemini 2.0 Flash<br/>via createGeminiClassifier"]
+    AGUI["AG-UI / CopilotKit route"]
+    Anth["Claude / OpenAI / local model"]
+    Heur["createHeuristicClassifier<br/>(zero-dep fallback)"]
+  end
+
+  Classify -.-> Gemini
+  Classify -.-> AGUI
+  Classify -.-> Anth
+  Classify -.-> Heur
+```
+
+**Nothing in this library imports CopilotKit, AG-UI SDK, Next.js, or any LLM SDK.** It runs anywhere React 18+ runs. The agent backend is a `ClassifyFn` injection — that's the entire integration surface.
+
+---
+
+## The contract
+
+Three types are the entire boundary between your code and the library:
+
+```mermaid
+flowchart LR
+  E["BehaviorEvent[]<br/><i>click · scroll · hover · dwell</i>"]
+  S["BehaviorSummary<br/><i>clicks_per_min, avg_dwell_ms,<br/>scroll_depth, hover_count,<br/>events_seen, page_context</i>"]
+  D["AgentDirective<br/><i>variant · confidence · reasoning</i>"]
+  V["Rendered variant"]
+
+  E -->|tracker aggregates| S
+  S -->|ClassifyFn = your policy| D
+  D -->|surface selects| V
+```
+
+In code:
+
+```ts
+type ClassifyFn = (summary: BehaviorSummary) => Promise<AgentDirective>;
+
+type BehaviorSummary = {
+  clicks_per_min: number;
+  avg_dwell_ms: number;
+  scroll_depth: number;        // 0–1
+  hover_count: number;
+  events_seen: number;         // saturates at 50
+  page_context: { route: string; visible_product_ids: string[] };
+};
+
+type AgentDirective = {
+  variant: "decisive" | "deliberate" | "neutral";
+  confidence: number;          // 0–1
+  reasoning: string;           // one-sentence English
+};
+```
+
+Whatever you put behind `ClassifyFn` — Gemini, Claude, OpenAI, a CopilotKit/AG-UI route, a hand-tuned regex — it's the policy that decides which variant the user sees. Freeze these types and the library and your agent backend evolve independently. See [`src/types.ts`](./src/types.ts) for the canonical definitions.
 
 ---
 
@@ -66,32 +214,7 @@ That's the whole integration. The surface tracks behavior in its DOM region, cal
 | `createHeuristicClassifier()` | Zero-dependency heuristic fallback. Useful for offline dev and demos. |
 | `PERSONAS` | Pre-canned behavior traces (`decisive`, `deliberate`) for deterministic demos via `seedPersona`. |
 
-Full type signatures live in [`src/types.ts`](./src/types.ts) — that file is the contract between the library and the consumer.
-
-## The contract
-
-Everything the consumer needs to know fits in one type:
-
-```ts
-type ClassifyFn = (summary: BehaviorSummary) => Promise<AgentDirective>;
-
-type BehaviorSummary = {
-  clicks_per_min: number;
-  avg_dwell_ms: number;
-  scroll_depth: number;        // 0–1
-  hover_count: number;
-  events_seen: number;         // saturates at 50
-  page_context: { route: string; visible_product_ids: string[] };
-};
-
-type AgentDirective = {
-  variant: "decisive" | "deliberate" | "neutral";
-  confidence: number;          // 0–1
-  reasoning: string;           // one-sentence English
-};
-```
-
-Whatever you put behind `ClassifyFn` — Gemini, Claude, OpenAI, a CopilotKit/AG-UI route, a hand-tuned regex — it's the policy that decides which variant the user sees.
+Full type signatures live in [`src/types.ts`](./src/types.ts) — that file is the contract between the library and the consumer (also visualized [above](#the-contract)).
 
 ## Wiring AG-UI / CopilotKit
 
