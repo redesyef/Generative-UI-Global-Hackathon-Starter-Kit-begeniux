@@ -88,24 +88,13 @@ To use a different MCP server (Linear, Slack, GitHub, …), edit `apps/agent/src
 
 ---
 
-## Manual setup (long form)
+## Notes on the run-locally flow
 
-The same flow as the [Run it locally](../README.md#run-it-locally) section, with detail on each step:
+A few things the [Run it locally](../README.md#run-it-locally) quickstart elides:
 
-1. Get a license token — run `npx copilotkit@latest license` (or sign in at [dashboard.operations.copilotkit.ai/sign-in](https://dashboard.operations.copilotkit.ai/sign-in)). Paste the token into `.env` as `COPILOTKIT_LICENSE_TOKEN`.
-2. Bring up infra:
-   ```bash
-   docker compose up -d --wait
-   ```
-   This pulls `ghcr.io/copilotkit/intelligence/composite` and starts Postgres + Redis alongside.
-3. Copy env templates: `cp .env.example .env` and `cp apps/agent/.env.example apps/agent/.env`. Paste your keys.
-4. Install + run:
-   ```bash
-   npm install
-   npm run dev
-   ```
-
-The intelligence env vars (`INTELLIGENCE_API_URL`, `INTELLIGENCE_GATEWAY_WS_URL`, `INTELLIGENCE_API_KEY`) match `deployment/docker-compose.yml`'s defaults — no manual editing needed for local dev.
+- **Docker is implicit.** `npm run dev` calls `npm run dev:infra` first, which runs `docker compose up -d --wait` against `deployment/docker-compose.yml`. That pulls `ghcr.io/copilotkit/intelligence/composite` and brings up Postgres + Redis alongside. If you'd rather bring infra up yourself, run `npm run dev:infra` once and then `npm run dev:ui` / `dev:bff` / `dev:agent` separately.
+- **Intelligence env vars match the compose defaults.** `INTELLIGENCE_API_URL`, `INTELLIGENCE_GATEWAY_WS_URL`, and `INTELLIGENCE_API_KEY` in `.env.example` line up with `deployment/docker-compose.yml` — no manual editing needed for local dev.
+- **License vs Gemini.** Both are required. The license is a one-time fetch (`npx copilotkit@latest license`). The Gemini key has to land in **both** `.env` (BFF + Next.js) and `apps/agent/.env` (agent's own dotenv).
 
 ---
 
