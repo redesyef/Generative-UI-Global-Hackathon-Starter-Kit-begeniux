@@ -516,6 +516,65 @@ def insert_notion_lead(
         )
 
 
+@tool
+def post_lead_comment(
+    leadId: Annotated[str, "The Notion page id of the lead to comment on."],
+    subject: Annotated[
+        str,
+        "The email subject the user approved. Posted as the first bold line of the comment.",
+    ],
+    body: Annotated[str, "The full email body the user approved."],
+    tool_call_id: Annotated[str, InjectedToolCallId] = "",
+) -> Command:
+    """Post an approved email draft as a comment on the lead's Notion page.
+
+    Called AFTER the user clicks Send on the renderEmailDraft HITL card.
+    The comment text is `Subject: …\n\n<body>` so it shows up cleanly in
+    Notion's discussion thread.
+    """
+    try:
+        from .notion_mcp import has_notion_token, mcp_create_comment
+
+        if not has_notion_token():
+            return Command(
+                update={
+                    "messages": [
+                        ToolMessage(
+                            content=(
+                                "Comment skipped: NOTION_TOKEN is not set. "
+                                "Set it and re-share the database with the integration."
+                            ),
+                            tool_call_id=tool_call_id,
+                        )
+                    ]
+                }
+            )
+
+        text = f"Subject: {subject}\n\n{body}"
+        mcp_create_comment(page_id=leadId, text=text)
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        content=f"Posted email comment to lead {leadId}.",
+                        tool_call_id=tool_call_id,
+                    )
+                ]
+            }
+        )
+    except Exception as e:  # noqa: BLE001 - surface error to the LLM
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        content=f"Comment failed: {e}",
+                        tool_call_id=tool_call_id,
+                    )
+                ]
+            }
+        )
+
+
 def load_notion_tools() -> List[Any]:
     """Return the Notion-flavored backend tool list for the agent.
 
@@ -538,6 +597,7 @@ def load_notion_tools() -> List[Any]:
         notion_health_check,
         update_notion_lead,
         insert_notion_lead,
+        post_lead_comment,
     ]
     print(f"Backend tools loaded: {len(tools)} tools")
     return tools

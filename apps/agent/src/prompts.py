@@ -74,6 +74,14 @@ FRONTEND_TOOLS = (
     "  the detail panel.\n"
     "- renderWorkshopDemand({}): inline mini-chart of top workshops by\n"
     "  current lead count. Use only for workshop-ranking questions.\n"
+    "- renderEmailDraft({leadId, leadName?, leadEmail?, subject, body}):\n"
+    "  HUMAN-IN-THE-LOOP outreach draft. Mount this whenever the user asks\n"
+    "  you to draft / write / compose an email. The user can edit subject\n"
+    "  and body in chat, then click Send (which round-trips back as a\n"
+    "  request for you to call post_lead_comment) or Discard (drops the\n"
+    "  draft). DO NOT call post_lead_comment in the SAME turn as\n"
+    "  renderEmailDraft — wait for the user's approval to come back through\n"
+    "  the chat as a follow-up message, then post.\n"
 )
 
 
@@ -182,6 +190,11 @@ INTEGRATION_PROMPT = (
     "- find_lead(query): resolve a name (or partial name) to the real lead\n"
     "  id from state.leads. Use this BEFORE selectLead / update_notion_lead\n"
     "  / renderLeadMiniCard whenever the user references a lead by name.\n"
+    "- post_lead_comment(leadId, subject, body): post an APPROVED email\n"
+    "  draft as a comment on the lead's Notion page. Only call this AFTER\n"
+    "  the user has clicked Send on a renderEmailDraft card — the canvas\n"
+    "  injects a follow-up user message that explicitly tells you to call\n"
+    "  this tool with the final subject/body. Never call it speculatively.\n"
     "- notion_health_check(): one-shot connection + schema sanity check.\n"
     "  Returns {user_id, db_title, row_count, expected_props,\n"
     "  actual_props, missing_props, error}. Call before claiming an\n"

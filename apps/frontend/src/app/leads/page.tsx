@@ -24,6 +24,7 @@ import { Header } from "@/components/leads/Header";
 import { PipelineBoard } from "@/components/leads/PipelineBoard";
 import { WorkshopDemand } from "@/components/leads/WorkshopDemand";
 import { LeadMiniCard } from "@/components/leads/inline/LeadMiniCard";
+import { EmailDraftCard } from "@/components/leads/inline/EmailDraftCard";
 import { ToolFallbackCard } from "@/components/copilot/ToolFallbackCard";
 
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -502,6 +503,52 @@ function CanvasInner() {
       "Render an inline horizontal bar chart of leads-per-workshop. Reads live agent state, takes no args.",
     parameters: z.object({}),
     render: () => <LiveWorkshopDemand />,
+  });
+
+  // HITL email draft. Agent supplies leadId + subject + body. The user can
+  // edit the fields in chat, then click Send — which fires post_lead_comment
+  // through injectPrompt so the agent persists it as a Notion comment.
+  useFrontendTool({
+    name: "renderEmailDraft",
+    description:
+      "Render a human-in-the-loop email draft inline in chat. Use this AFTER finding the lead and BEFORE posting any comment — the user must approve, edit, or discard the draft. On Send, the canvas will round-trip a post_lead_comment call back to the agent. Do NOT call post_lead_comment in the same turn — wait for the user.",
+    parameters: z.object({
+      leadId: z.string(),
+      leadName: z.string().optional(),
+      leadEmail: z.string().optional(),
+      subject: z.string(),
+      body: z.string(),
+    }),
+    render: ({ args }) => {
+      if (!args.leadId || !args.subject || !args.body) {
+        return (
+          <div className="my-2 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-2.5 py-1 text-[11px] text-muted-foreground">
+            <span className="size-1.5 animate-pulse rounded-full bg-[#BEC2FF]" />
+            <span className="font-mono">Drafting email…</span>
+          </div>
+        );
+      }
+      const leadId = args.leadId;
+      return (
+        <EmailDraftCard
+          leadId={leadId}
+          leadName={args.leadName}
+          leadEmail={args.leadEmail}
+          initialSubject={args.subject}
+          initialBody={args.body}
+          onSend={(final) =>
+            injectPrompt(
+              `The user approved the email draft for lead ${leadId}. Post it as a Notion comment by calling post_lead_comment with leadId=${JSON.stringify(leadId)}, subject=${JSON.stringify(final.subject)}, body=${JSON.stringify(final.body)}. Do not modify the wording.`,
+            )
+          }
+          onRegenerate={() =>
+            injectPrompt(
+              `Regenerate the outreach email draft for lead ${leadId} and call renderEmailDraft again with the new version.`,
+            )
+          }
+        />
+      );
+    },
   });
 
   // Catch-all: any tool call without a dedicated render lands here. Notion

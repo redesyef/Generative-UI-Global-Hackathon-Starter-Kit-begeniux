@@ -260,6 +260,24 @@ def mcp_create_page(
     )
 
 
+def mcp_create_comment(page_id: str, text: str) -> Dict[str, Any]:
+    """Post a comment on a Notion page via `API-create-a-comment`.
+
+    Used by the email-draft HITL flow: after the user approves a draft in
+    the chat card, the agent calls this to persist the message as a
+    Notion page comment so it's visible alongside the lead row.
+    """
+    return _extract_payload(
+        _run_sync(_call_tool_async(
+            "API-create-a-comment",
+            {
+                "parent": {"page_id": page_id},
+                "rich_text": [{"type": "text", "text": {"content": text}}],
+            },
+        ))
+    )
+
+
 def has_notion_token() -> bool:
     """Sentinel for callers that want to short-circuit before spawning npx."""
     return _has_token()

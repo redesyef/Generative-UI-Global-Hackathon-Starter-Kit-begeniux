@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { LeadMiniCard } from "@/components/leads/inline/LeadMiniCard";
+import { EmailDraftCard } from "@/components/leads/inline/EmailDraftCard";
 import { WorkshopDemand } from "@/components/leads/WorkshopDemand";
 import { ToolFallbackCard } from "@/components/copilot/ToolFallbackCard";
 import type { Lead } from "@/lib/leads/types";
@@ -189,6 +190,26 @@ export default function ShowcasePage() {
             />
           </div>
         </div>
+      </Section>
+
+      <Section
+        eyebrow="Human in the loop"
+        title="renderEmailDraft"
+        blurb="Mounted when the user asks the agent to draft an outreach email. Subject and body are editable in the chat; clicking Send injects a follow-up message that asks the agent to persist the approved draft as a Notion comment via post_lead_comment."
+      >
+        <EmailDraftCard
+          leadId={MOCK_LEADS[0].id}
+          leadName={MOCK_LEADS[0].name}
+          leadEmail={MOCK_LEADS[0].email}
+          initialSubject="Following up on your AI Agentic UI workshop interest"
+          initialBody={`Hi ${MOCK_LEADS[0].name.split(" ")[0]},\n\nThanks for signing up for the Agentic UI (AG-UI) workshop — your background at ${MOCK_LEADS[0].company} is exactly the profile we're building the curriculum for.\n\nA quick question before we lock the date: are there one or two specific patterns (state sync, tool gating, HITL) you're hoping we cover?\n\nBest,\nWorkshop team`}
+          onSend={() => {
+            /* showcase: no-op */
+          }}
+          onRegenerate={() => {
+            /* showcase: no-op */
+          }}
+        />
       </Section>
 
       <Section
