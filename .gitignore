@@ -28,8 +28,10 @@ apps/mcp/.mcp-use/*
 # first read when Notion isn't configured). Per-checkout, never committed.
 apps/agent/data/leads.local.json
 
-# Claude Code harness scaffolding (per-checkout, not for downstream teams)
-.claude/
+# Claude Code harness scaffolding at the repo root (per-checkout, not for downstream teams).
+# Scoped to the root only — packages/begeniux/.claude/ ships with the library so future
+# contributors get the bundled domain skills (CopilotKit / AG-UI / MCP).
+/.claude/
 
 # Internal: starter-kit authoring docs, not for downstream hackathon teams
 COMPLIANCE.md

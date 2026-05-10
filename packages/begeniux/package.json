@@ -1,7 +1,7 @@
 {
   "name": "begeniux",
-  "version": "0.1.0",
-  "description": "Behaviorally-adaptive UI through LLM agents and the AG-UI protocol.",
+  "version": "0.2.0",
+  "description": "Drop-in adaptive UI engine. Tracks user behavior, asks an agent for a CSS-level adaptation plan, mutates the live DOM in real time.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -11,6 +11,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./copilotkit": {
+      "types": "./dist/copilotkit.d.ts",
+      "import": "./dist/copilotkit.js",
+      "require": "./dist/copilotkit.cjs"
     }
   },
   "files": [
@@ -26,22 +31,32 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "@copilotkit/react-core": ">=2.0.0",
+    "zod": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "@copilotkit/react-core": { "optional": true },
+    "zod": { "optional": true }
   },
   "devDependencies": {
+    "@copilotkit/react-core": "latest",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsup": "^8.3.5",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "zod": "^3.23.8"
   },
   "keywords": [
     "react",
-    "generative-ui",
     "adaptive-ui",
+    "agentic-ui",
+    "generative-ui",
     "ag-ui",
     "copilotkit",
+    "langgraph",
     "llm",
     "behavioral-ui"
   ],

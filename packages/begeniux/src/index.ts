@@ -1,27 +1,38 @@
-// Components
-export { BeGenProvider } from "./BeGenProvider";
-export { BeGenSurface } from "./BeGenSurface";
+// ─── Provider + hooks (high-level API) ──────────────────────────────
+export { BeGenProvider, useBeGenContext } from "./BeGenProvider";
+export type { BeGenProviderProps } from "./BeGenProvider";
 
-// Hooks
+// ─── Low-level escape hatches ───────────────────────────────────────
 export { useBehaviorTracker } from "./useBehaviorTracker";
-export { useBeGenContext } from "./useBeGenContext";
-
-// Classifier helpers
-export { createGeminiClassifier } from "./classifier/gemini";
-export { createHeuristicClassifier } from "./classifier/heuristic";
-
-// Persona trace presets
-export { PERSONAS } from "./personas";
-
-// Types
-export type {
-  BehaviorEvent,
-  BehaviorSummary,
-  Variant,
-  AgentDirective,
-  ClassifyFn,
-} from "./types";
-export type { BeGenSurfaceProps } from "./BeGenSurface";
-export type { BeGenContextValue } from "./BeGenProvider";
-export type { CreateGeminiClassifierOpts } from "./classifier/gemini";
 export type { UseBehaviorTrackerOpts } from "./useBehaviorTracker";
+
+export { AdaptationEngine } from "./AdaptationEngine";
+export type {
+  AdaptationEngineEvent,
+  AdaptationEngineOpts,
+} from "./AdaptationEngine";
+
+export { snapshotVisibleSelectors } from "./domSnapshot";
+export type { DomSnapshotOpts } from "./domSnapshot";
+
+// ─── Adapters (transport layer) ─────────────────────────────────────
+// HTTP adapter is dependency-free, lives in main entry.
+// CopilotKit adapter lives in subpath "begeniux/copilotkit" so consumers
+// who don't use CopilotKit pay zero bundle cost.
+export { createHttpAdapter } from "./adapters/http";
+export type { HttpAdapterOpts } from "./adapters/http";
+
+// ─── Types (the contract) ───────────────────────────────────────────
+export type {
+  Adaptation,
+  AdaptationPlan,
+  AdaptInput,
+  BehaviorEvent,
+  BehaviorListener,
+  BehaviorSummary,
+  BeGenContextValue,
+  ClassifyFn,
+  CssVariableSpec,
+  DesignSystem,
+  ScopeOpts,
+} from "./types";
